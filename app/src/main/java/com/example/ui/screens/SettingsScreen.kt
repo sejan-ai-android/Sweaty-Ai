@@ -190,13 +190,8 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         listOf(
-                            "auto" to "⚡ Auto-Fallback (All Free Models)",
-                            "gemini-2.5-flash" to "⚡ Gemini 2.5 Flash",
-                            "gemini-2.5-flash-lite" to "🚀 Gemini 2.5 Flash-Lite",
-                            "gemini-flash-latest" to "🌟 Gemini Flash Latest",
-                            "gemini-3.1-flash-lite-preview" to "✨ Gemini 3.1 Flash-Lite",
-                            "gemini-2.0-flash" to "💡 Gemini 2.0 Flash",
-                            "gemini-2.0-flash-lite" to "💡 Gemini 2.0 Flash-Lite"
+                            "gemini-2.5-flash" to "⚡ Gemini 2.5 Flash (Recommended)",
+                            "gemini-3.5-flash-lite" to "🚀 Gemini 3.5 Flash-Lite"
                         ).forEach { (mKey, mLabel) ->
                             val isSel = selectedGeminiModel == mKey
                             FilterChip(
@@ -205,7 +200,7 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
                                     selectedGeminiModel = mKey
                                     prefs.geminiModel = mKey
                                 },
-                                label = { Text(mLabel, fontSize = 11.sp) }
+                                label = { Text(mLabel, fontSize = 12.sp) }
                             )
                         }
                     }

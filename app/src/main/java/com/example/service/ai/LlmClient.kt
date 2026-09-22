@@ -21,9 +21,10 @@ data class LlmResponse(
 class LlmClient {
 
     private val client = OkHttpClient.Builder()
-        .connectTimeout(60, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
-        .writeTimeout(60, TimeUnit.SECONDS)
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .writeTimeout(10, TimeUnit.SECONDS)
+        .retryOnConnectionFailure(true)
         .build()
 
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
@@ -34,7 +35,7 @@ class LlmClient {
         memories: List<Memory>,
         provider: String,
         apiKey: String,
-        geminiModel: String = "auto"
+        geminiModel: String = "gemini-2.5-flash"
     ): LlmResponse = withContext(Dispatchers.IO) {
         val cleanKey = apiKey.trim().removeSurrounding("\"").removeSurrounding("'")
         if (cleanKey.isBlank()) {
@@ -141,22 +142,11 @@ class LlmClient {
             })
         }
 
-        // Comprehensive list of all Gemini Free Tier models
-        val allFreeTierModels = listOf(
-            "gemini-2.5-flash",
-            "gemini-2.5-flash-lite",
-            "gemini-flash-latest",
-            "gemini-3.1-flash-lite-preview",
-            "gemini-2.5-flash-preview-12-2025",
-            "gemini-3.5-flash",
-            "gemini-2.0-flash",
-            "gemini-2.0-flash-lite"
-        )
-
-        val modelCandidates = if (preferredModel.isNotBlank() && preferredModel != "auto") {
-            listOf(preferredModel) + allFreeTierModels.filter { it != preferredModel }
+        // Strictly 2 models as requested: Gemini 2.5 Flash and Gemini 3.5 Flash-Lite
+        val modelCandidates = if (preferredModel.contains("lite", ignoreCase = true) || preferredModel.contains("3.5", ignoreCase = true)) {
+            listOf("gemini-3.5-flash-lite", "gemini-3.1-flash-lite-preview", "gemini-2.5-flash")
         } else {
-            allFreeTierModels
+            listOf("gemini-2.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite-preview")
         }
 
         var lastErrorMsg = "Unable to connect to Gemini API"
@@ -184,7 +174,6 @@ class LlmClient {
                     val errJson = JSONObject(body)
                     val errObj = errJson.optJSONObject("error")
                     val msg = errObj?.optString("message")
-                    val status = errObj?.optString("status")
                     if (!msg.isNullOrBlank()) {
                         parsedError = msg
                         if (msg.contains("API key not valid", ignoreCase = true) ||
@@ -209,7 +198,7 @@ class LlmClient {
                     allQuotaExceeded = false
                 }
 
-                // If 404 (model not found), 429 (quota/rate-limit), 503 (busy), 500, or model-not-supported 400, continue to next candidate
+                // Try next model if 404, 429, 503, etc.
                 continue
             } catch (e: Exception) {
                 allQuotaExceeded = false
@@ -218,7 +207,7 @@ class LlmClient {
         }
 
         val finalMessage = if (allQuotaExceeded) {
-            "Gemini Free Tier rate limit reached. All free-tier models were tried. Please wait 10-15 seconds and try again."
+            "Gemini Free Tier rate limit reached. Please wait 10 seconds and try again."
         } else {
             "API Error: $lastErrorMsg. Please verify your API key in Settings."
         }

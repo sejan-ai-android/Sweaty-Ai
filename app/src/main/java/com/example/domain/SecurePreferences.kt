@@ -148,7 +148,7 @@ class SecurePreferences(context: Context) {
         set(value) = prefs.edit().putString(PREF_PROVIDER, value).apply()
 
     var geminiModel: String
-        get() = prefs.getString(PREF_GEMINI_MODEL, "auto") ?: "auto"
+        get() = prefs.getString(PREF_GEMINI_MODEL, "gemini-2.5-flash") ?: "gemini-2.5-flash"
         set(value) = prefs.edit().putString(PREF_GEMINI_MODEL, value).apply()
 
     companion object {
