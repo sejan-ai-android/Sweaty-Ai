@@ -21,8 +21,9 @@ data class LlmResponse(
 class LlmClient {
 
     private val client = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(20, TimeUnit.SECONDS)
+        .connectTimeout(60, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .writeTimeout(60, TimeUnit.SECONDS)
         .build()
 
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
@@ -34,17 +35,18 @@ class LlmClient {
         provider: String,
         apiKey: String
     ): LlmResponse = withContext(Dispatchers.IO) {
-        if (apiKey.isBlank()) {
+        val cleanKey = apiKey.trim().removeSurrounding("\"").removeSurrounding("'")
+        if (cleanKey.isBlank()) {
             return@withContext handleOfflineOrMissingKey(userInput)
         }
 
         val systemPrompt = buildSystemPrompt(memories)
 
-        return@withContext when (provider) {
+        return@withContext when (provider.lowercase()) {
             "openai" -> callOpenAiCompatible(
                 url = "https://api.openai.com/v1/chat/completions",
                 model = "gpt-4o",
-                apiKey = apiKey,
+                apiKey = cleanKey,
                 systemPrompt = systemPrompt,
                 history = history,
                 userInput = userInput
@@ -52,13 +54,13 @@ class LlmClient {
             "grok" -> callOpenAiCompatible(
                 url = "https://api.x.ai/v1/chat/completions",
                 model = "grok-2",
-                apiKey = apiKey,
+                apiKey = cleanKey,
                 systemPrompt = systemPrompt,
                 history = history,
                 userInput = userInput
             )
             else -> callGemini(
-                apiKey = apiKey,
+                apiKey = cleanKey,
                 systemPrompt = systemPrompt,
                 history = history,
                 userInput = userInput
@@ -104,69 +106,101 @@ class LlmClient {
         history: List<Pair<String, Boolean>>,
         userInput: String
     ): LlmResponse {
-        return try {
-            val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey"
+        val cleanKey = apiKey.trim().removeSurrounding("\"").removeSurrounding("'")
 
-            val contentsArray = JSONArray()
+        val contentsArray = JSONArray()
 
-            // Include last 6 turns of history
-            val recentHistory = history.takeLast(6)
-            for (turn in recentHistory) {
-                val role = if (turn.second) "user" else "model"
-                val turnObj = JSONObject().apply {
-                    put("role", role)
-                    put("parts", JSONArray().put(JSONObject().put("text", turn.first)))
-                }
-                contentsArray.put(turnObj)
+        // Include last 6 turns of history
+        val recentHistory = history.takeLast(6)
+        for (turn in recentHistory) {
+            val role = if (turn.second) "user" else "model"
+            val turnObj = JSONObject().apply {
+                put("role", role)
+                put("parts", JSONArray().put(JSONObject().put("text", turn.first)))
             }
-
-            // Current user turn
-            contentsArray.put(JSONObject().apply {
-                put("role", "user")
-                put("parts", JSONArray().put(JSONObject().put("text", userInput)))
-            })
-
-            val payload = JSONObject().apply {
-                put("system_instruction", JSONObject().apply {
-                    put("parts", JSONArray().put(JSONObject().put("text", systemPrompt)))
-                })
-                put("contents", contentsArray)
-                put("generationConfig", JSONObject().apply {
-                    put("temperature", 0.7)
-                    put("maxOutputTokens", 600)
-                })
-            }
-
-            val request = Request.Builder()
-                .url(url)
-                .post(payload.toString().toRequestBody(jsonMediaType))
-                .build()
-
-            val response = client.newCall(request).execute()
-            val body = response.body?.string() ?: ""
-
-            if (!response.isSuccessful) {
-                // Try fallback to gemini-1.5-flash if 2.5-flash returned 404 or error
-                val fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey"
-                val fallbackReq = Request.Builder().url(fallbackUrl).post(payload.toString().toRequestBody(jsonMediaType)).build()
-                val fallbackRes = client.newCall(fallbackReq).execute()
-                val fallbackBody = fallbackRes.body?.string() ?: ""
-                if (fallbackRes.isSuccessful) {
-                    return parseGeminiResponse(fallbackBody)
-                }
-                return LlmResponse(
-                    spokenText = "API Error: ${response.code}. Please verify your API key.",
-                    isError = true
-                )
-            }
-
-            parseGeminiResponse(body)
-        } catch (e: Exception) {
-            LlmResponse(
-                spokenText = "Connection error: ${e.localizedMessage ?: "Unknown error"}",
-                isError = true
-            )
+            contentsArray.put(turnObj)
         }
+
+        // Current user turn
+        contentsArray.put(JSONObject().apply {
+            put("role", "user")
+            put("parts", JSONArray().put(JSONObject().put("text", userInput)))
+        })
+
+        val payload = JSONObject().apply {
+            put("system_instruction", JSONObject().apply {
+                put("parts", JSONArray().put(JSONObject().put("text", systemPrompt)))
+            })
+            put("contents", contentsArray)
+            put("generationConfig", JSONObject().apply {
+                put("temperature", 0.7)
+                put("maxOutputTokens", 600)
+            })
+        }
+
+        // Supported models in priority order per Gemini guidelines
+        val modelCandidates = listOf(
+            "gemini-3.5-flash",
+            "gemini-flash-latest",
+            "gemini-2.5-flash-preview-12-2025",
+            "gemini-3.1-pro-preview"
+        )
+
+        var lastErrorMsg = "Unable to connect to Gemini API"
+
+        for (model in modelCandidates) {
+            try {
+                val url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$cleanKey"
+                val requestBuilder = Request.Builder()
+                    .url(url)
+                    .addHeader("x-goog-api-key", cleanKey)
+                    .post(payload.toString().toRequestBody(jsonMediaType))
+
+                // Also support Bearer authentication for Vertex/Cloud tokens starting with AQ or ya29
+                if (cleanKey.startsWith("AQ") || cleanKey.startsWith("ya29")) {
+                    requestBuilder.addHeader("Authorization", "Bearer $cleanKey")
+                }
+
+                val request = requestBuilder.build()
+                val response = client.newCall(request).execute()
+                val body = response.body?.string() ?: ""
+
+                if (response.isSuccessful && body.isNotBlank()) {
+                    return parseGeminiResponse(body)
+                }
+
+                // If 404 (model not found on this endpoint/tier), try next candidate
+                var parsedError = "HTTP ${response.code}"
+                try {
+                    val errJson = JSONObject(body)
+                    val errObj = errJson.optJSONObject("error")
+                    val msg = errObj?.optString("message")
+                    if (!msg.isNullOrBlank()) {
+                        parsedError = msg
+                    }
+                } catch (_: Exception) {}
+
+                lastErrorMsg = "Gemini ($model): $parsedError"
+
+                // If error is 404, continue to next model candidate
+                if (response.code == 404) {
+                    continue
+                } else if (response.code == 400 || response.code == 403) {
+                    // Invalid key or permission error
+                    return LlmResponse(
+                        spokenText = "Gemini API Error (${response.code}): $parsedError. Please verify your API key in Settings.",
+                        isError = true
+                    )
+                }
+            } catch (e: Exception) {
+                lastErrorMsg = e.localizedMessage ?: "Network error"
+            }
+        }
+
+        return LlmResponse(
+            spokenText = "API Error: $lastErrorMsg. Please verify your API key in Settings.",
+            isError = true
+        )
     }
 
     private fun callOpenAiCompatible(
