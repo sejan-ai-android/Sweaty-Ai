@@ -20,8 +20,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Visibility
@@ -34,6 +36,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -49,8 +52,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -72,11 +78,9 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
     var selectedLang by remember { mutableStateOf(prefs.language) }
     var selectedProvider by remember { mutableStateOf(prefs.selectedProvider) }
     var selectedGeminiModel by remember { mutableStateOf(prefs.geminiModel) }
-    var geminiKey by remember { mutableStateOf(prefs.geminiApiKey) }
     var openAiKey by remember { mutableStateOf(prefs.openAiApiKey) }
     var grokKey by remember { mutableStateOf(prefs.grokApiKey) }
 
-    var showGeminiKey by remember { mutableStateOf(false) }
     var showOpenAiKey by remember { mutableStateOf(false) }
     var showGrokKey by remember { mutableStateOf(false) }
 
@@ -85,6 +89,9 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
     var speechPitch by remember { mutableFloatStateOf(prefs.speechPitch) }
 
     var saveFeedback by remember { mutableStateOf<String?>(null) }
+    var tokenCopiedFeedback by remember { mutableStateOf(false) }
+    val clipboardManager = LocalClipboardManager.current
+    val debugToken by viewModel.appCheckDebugToken.collectAsState()
 
     Column(
         modifier = Modifier
@@ -145,7 +152,7 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(
-                        "gemini" to "Google Gemini (Free Tier)",
+                        "gemini" to "Google Gemini (Firebase AI)",
                         "openai" to "OpenAI (GPT-4o)",
                         "grok" to "xAI Grok-2"
                     ).forEach { (pKey, pLabel) ->
@@ -163,7 +170,7 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
             }
         }
 
-        // 2b. Gemini Model Selector (Free Tier)
+        // 2b. Gemini Model Selector & Firebase AI Badge
         if (selectedProvider == "gemini") {
             Card(
                 shape = RoundedCornerShape(16.dp),
@@ -176,13 +183,24 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleMedium
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(R.string.settings_gemini_model_desc),
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Read-only label
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(CyanNeon.copy(alpha = 0.12f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = "✨ Gemini is powered by Firebase AI Logic (no API key required).",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = CyanNeon
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     @OptIn(ExperimentalLayoutApi::class)
                     FlowRow(
@@ -190,8 +208,9 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         listOf(
-                            "gemini-2.5-flash" to "⚡ Gemini 2.5 Flash (Recommended)",
-                            "gemini-3.5-flash-lite" to "🚀 Gemini 3.5 Flash-Lite"
+                            "gemini-2.5-flash" to "⚡ Gemini 2.5 Flash",
+                            "gemini-3.5-flash-lite" to "🚀 Gemini 3.5 Flash-Lite",
+                            "gemini-3.8-flash" to "🌟 Gemini 3.8 Flash"
                         ).forEach { (mKey, mLabel) ->
                             val isSel = selectedGeminiModel == mKey
                             FilterChip(
@@ -208,7 +227,86 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
             }
         }
 
-        // 3. API Keys (Android Keystore Encrypted)
+        // 2c. Firebase App Check Token Viewer
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
+            modifier = Modifier.fillMaxWidth().testTag("appcheck_debug_card")
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(imageVector = Icons.Default.Security, contentDescription = null, tint = EmeraldGlow, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.settings_appcheck_title), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                }
+
+                Text(
+                    text = stringResource(R.string.settings_appcheck_desc),
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                // Debug Token Display Box
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                ) {
+                    Text(
+                        text = debugToken ?: "Generating token...",
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = EmeraldGlow,
+                        modifier = Modifier.testTag("appcheck_debug_token_text")
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = {
+                            debugToken?.let { token ->
+                                clipboardManager.setText(AnnotatedString(token))
+                                tokenCopiedFeedback = true
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = EmeraldGlow, contentColor = Color.Black),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.weight(1f).testTag("copy_debug_token_button")
+                    ) {
+                        Icon(
+                            imageVector = if (tokenCopiedFeedback) Icons.Default.Check else Icons.Default.ContentCopy,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (tokenCopiedFeedback) stringResource(R.string.settings_appcheck_copied) else stringResource(R.string.settings_appcheck_copy),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.regenerateAppCheckToken()
+                            tokenCopiedFeedback = false
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.testTag("regenerate_debug_token_button")
+                    ) {
+                        Icon(imageVector = Icons.Default.Refresh, contentDescription = "Regenerate", modifier = Modifier.size(16.dp))
+                    }
+                }
+            }
+        }
+
+        // 3. Optional Third-Party API Keys (OpenAI & Grok)
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
@@ -220,26 +318,6 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(stringResource(R.string.settings_api_keys), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                 }
-
-                // Gemini Key
-                OutlinedTextField(
-                    value = geminiKey,
-                    onValueChange = { geminiKey = it },
-                    label = { Text(stringResource(R.string.settings_gemini_key)) },
-                    placeholder = { Text("AIzaSy...") },
-                    singleLine = true,
-                    visualTransformation = if (showGeminiKey) VisualTransformation.None else PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    trailingIcon = {
-                        IconButton(onClick = { showGeminiKey = !showGeminiKey }) {
-                            Icon(
-                                imageVector = if (showGeminiKey) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                contentDescription = "Toggle visibility"
-                            )
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().testTag("gemini_key_input")
-                )
 
                 // OpenAI Key
                 OutlinedTextField(
@@ -283,11 +361,10 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
 
                 Button(
                     onClick = {
-                        prefs.geminiApiKey = geminiKey
                         prefs.openAiApiKey = openAiKey
                         prefs.grokApiKey = grokKey
                         prefs.geminiModel = selectedGeminiModel
-                        saveFeedback = "API Keys saved securely in Android Keystore!"
+                        saveFeedback = "Settings saved securely in Android Keystore!"
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = CyanNeon, contentColor = Color.Black),
                     shape = RoundedCornerShape(12.dp),

@@ -92,25 +92,6 @@ class SecurePreferences(context: Context) {
         }
     }
 
-    var geminiApiKey: String
-        get() {
-            val stored = prefs.getString(PREF_GEMINI_KEY, null)
-            if (!stored.isNullOrEmpty()) {
-                val decrypted = decrypt(stored)
-                if (decrypted.isNotBlank()) return decrypted
-            }
-            // Fallback to BuildConfig if present and non-empty
-            return try {
-                val field = BuildConfig::class.java.getField("GEMINI_API_KEY")
-                (field.get(null) as? String) ?: ""
-            } catch (e: Throwable) {
-                ""
-            }
-        }
-        set(value) {
-            prefs.edit().putString(PREF_GEMINI_KEY, encrypt(value.trim())).apply()
-        }
-
     var openAiApiKey: String
         get() = prefs.getString(PREF_OPENAI_KEY, null)?.let { decrypt(it) } ?: ""
         set(value) = prefs.edit().putString(PREF_OPENAI_KEY, encrypt(value.trim())).apply()
@@ -151,9 +132,12 @@ class SecurePreferences(context: Context) {
         get() = prefs.getString(PREF_GEMINI_MODEL, "gemini-2.5-flash") ?: "gemini-2.5-flash"
         set(value) = prefs.edit().putString(PREF_GEMINI_MODEL, value).apply()
 
+    var appCheckDebugToken: String
+        get() = prefs.getString(PREF_APPCHECK_DEBUG_TOKEN, "") ?: ""
+        set(value) = prefs.edit().putString(PREF_APPCHECK_DEBUG_TOKEN, value).apply()
+
     companion object {
         private const val KEY_ALIAS = "SweatyKey_v1"
-        private const val PREF_GEMINI_KEY = "encrypted_gemini_key"
         private const val PREF_OPENAI_KEY = "encrypted_openai_key"
         private const val PREF_GROK_KEY = "encrypted_grok_key"
         private const val PREF_LANGUAGE = "pref_language"
@@ -164,5 +148,6 @@ class SecurePreferences(context: Context) {
         private const val PREF_SPEECH_PITCH = "pref_speech_pitch"
         private const val PREF_PROVIDER = "pref_provider"
         private const val PREF_GEMINI_MODEL = "pref_gemini_model"
+        private const val PREF_APPCHECK_DEBUG_TOKEN = "pref_appcheck_debug_token"
     }
 }

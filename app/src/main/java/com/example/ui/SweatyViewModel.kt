@@ -76,6 +76,14 @@ class SweatyViewModel(private val app: SweatyApp) : ViewModel() {
     private val _memorySearchQuery = MutableStateFlow("")
     val memorySearchQuery: StateFlow<String> = _memorySearchQuery.asStateFlow()
 
+    val appCheckDebugToken: StateFlow<String?> = com.example.service.ai.AppCheckTokenProvider.debugToken
+
+    fun regenerateAppCheckToken() {
+        val newToken = java.util.UUID.randomUUID().toString()
+        securePrefs.appCheckDebugToken = newToken
+        com.example.service.ai.AppCheckTokenProvider.initializeToken(app, securePrefs)
+    }
+
     private var followUpJob: Job? = null
 
     // Flows from Room DB
@@ -256,7 +264,7 @@ class SweatyViewModel(private val app: SweatyApp) : ViewModel() {
                 apiKey = when (securePrefs.selectedProvider) {
                     "openai" -> securePrefs.openAiApiKey
                     "grok" -> securePrefs.grokApiKey
-                    else -> securePrefs.geminiApiKey
+                    else -> ""
                 },
                 geminiModel = securePrefs.geminiModel
             )

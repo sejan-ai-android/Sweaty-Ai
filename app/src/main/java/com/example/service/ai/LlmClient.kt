@@ -18,12 +18,14 @@ data class LlmResponse(
     val isError: Boolean = false
 )
 
-class LlmClient {
+class LlmClient(
+    private val firebaseGeminiService: FirebaseGeminiService = FirebaseGeminiService()
+) {
 
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .writeTimeout(10, TimeUnit.SECONDS)
+    private val httpClient = OkHttpClient.Builder()
+        .connectTimeout(12, TimeUnit.SECONDS)
+        .readTimeout(20, TimeUnit.SECONDS)
+        .writeTimeout(12, TimeUnit.SECONDS)
         .retryOnConnectionFailure(true)
         .build()
 
@@ -34,44 +36,80 @@ class LlmClient {
         history: List<Pair<String, Boolean>>, // (text, isUser)
         memories: List<Memory>,
         provider: String,
-        apiKey: String,
+        apiKey: String = "",
         geminiModel: String = "gemini-2.5-flash"
     ): LlmResponse = withContext(Dispatchers.IO) {
-        val cleanKey = apiKey.trim().removeSurrounding("\"").removeSurrounding("'")
-        if (cleanKey.isBlank()) {
-            return@withContext handleOfflineOrMissingKey(userInput)
-        }
-
         val systemPrompt = buildSystemPrompt(memories)
 
-        return@withContext when (provider.lowercase()) {
-            "openai" -> callOpenAiCompatible(
-                url = "https://api.openai.com/v1/chat/completions",
-                model = "gpt-4o",
-                apiKey = cleanKey,
-                systemPrompt = systemPrompt,
-                history = history,
-                userInput = userInput
-            )
-            "grok" -> callOpenAiCompatible(
-                url = "https://api.x.ai/v1/chat/completions",
-                model = "grok-2",
-                apiKey = cleanKey,
-                systemPrompt = systemPrompt,
-                history = history,
-                userInput = userInput
-            )
-            else -> callGemini(
-                apiKey = cleanKey,
-                systemPrompt = systemPrompt,
-                history = history,
-                userInput = userInput,
-                preferredModel = geminiModel
-            )
+        when (provider.lowercase()) {
+            "openai" -> {
+                val cleanKey = apiKey.trim().removeSurrounding("\"").removeSurrounding("'")
+                if (cleanKey.isBlank()) {
+                    return@withContext handleOfflineOrMissingKey(userInput, "OpenAI API Key")
+                }
+                callOpenAiCompatible(
+                    url = "https://api.openai.com/v1/chat/completions",
+                    model = "gpt-4o",
+                    apiKey = cleanKey,
+                    systemPrompt = systemPrompt,
+                    history = history,
+                    userInput = userInput
+                )
+            }
+            "grok" -> {
+                val cleanKey = apiKey.trim().removeSurrounding("\"").removeSurrounding("'")
+                if (cleanKey.isBlank()) {
+                    return@withContext handleOfflineOrMissingKey(userInput, "xAI Grok API Key")
+                }
+                callOpenAiCompatible(
+                    url = "https://api.x.ai/v1/chat/completions",
+                    model = "grok-2",
+                    apiKey = cleanKey,
+                    systemPrompt = systemPrompt,
+                    history = history,
+                    userInput = userInput
+                )
+            }
+            else -> {
+                // Gemini is powered by Firebase AI Logic (No user API key required!)
+                callFirebaseGemini(
+                    systemPrompt = systemPrompt,
+                    history = history,
+                    userInput = userInput,
+                    modelName = geminiModel.ifBlank { "gemini-2.5-flash" }
+                )
+            }
         }
     }
 
-    private fun handleOfflineOrMissingKey(userInput: String): LlmResponse {
+    private suspend fun callFirebaseGemini(
+        systemPrompt: String,
+        history: List<Pair<String, Boolean>>,
+        userInput: String,
+        modelName: String
+    ): LlmResponse {
+        val recentHistory = history.takeLast(8).map { (text, isUser) ->
+            (if (isUser) "user" else "model") to text
+        }
+
+        val rawResponse = firebaseGeminiService.generateChatResponse(
+            history = recentHistory,
+            userMessage = userInput,
+            systemInstructionText = systemPrompt,
+            modelName = modelName
+        )
+
+        if (rawResponse.startsWith("Error:") || rawResponse.startsWith("Firebase Gemini Error:")) {
+            return LlmResponse(
+                spokenText = rawResponse,
+                isError = true
+            )
+        }
+
+        return parseRawLlmReply(rawResponse)
+    }
+
+    private fun handleOfflineOrMissingKey(userInput: String, keyName: String): LlmResponse {
         val lower = userInput.lowercase()
         // Check local offline device control intents
         val offlineAction = when {
@@ -96,126 +134,11 @@ class LlmClient {
         }
 
         val msg = if (userInput.any { it in '\u0980'..'\u09FF' }) {
-            "অনলাইন উত্তরের জন্য অনুগ্রহ করে সেটিংসে আপনার জেমিনাই বা OpenAI API কী যুক্ত করুন। তবে বেসিক ডিভাইস কমান্ড এখনই কাজ করবে।"
+            "অনলাইন উত্তরের জন্য সেটিংসে $keyName যোগ করুন, অথবা গুগল জেমিনাই (Firebase AI Logic) নির্বাচন করুন যা কোনো কী ছাড়াই কাজ করে।"
         } else {
-            "Please configure your Gemini API key in Settings for full conversational AI and live queries. Basic device actions work offline."
+            "Please configure your $keyName in Settings, or switch to Google Gemini which works automatically with Firebase AI Logic."
         }
         return LlmResponse(spokenText = msg, isError = true)
-    }
-
-    private fun callGemini(
-        apiKey: String,
-        systemPrompt: String,
-        history: List<Pair<String, Boolean>>,
-        userInput: String,
-        preferredModel: String = "auto"
-    ): LlmResponse {
-        val cleanKey = apiKey.trim().removeSurrounding("\"").removeSurrounding("'")
-
-        val contentsArray = JSONArray()
-
-        // Include last 6 turns of history
-        val recentHistory = history.takeLast(6)
-        for (turn in recentHistory) {
-            val role = if (turn.second) "user" else "model"
-            val turnObj = JSONObject().apply {
-                put("role", role)
-                put("parts", JSONArray().put(JSONObject().put("text", turn.first)))
-            }
-            contentsArray.put(turnObj)
-        }
-
-        // Current user turn
-        contentsArray.put(JSONObject().apply {
-            put("role", "user")
-            put("parts", JSONArray().put(JSONObject().put("text", userInput)))
-        })
-
-        val payload = JSONObject().apply {
-            put("system_instruction", JSONObject().apply {
-                put("parts", JSONArray().put(JSONObject().put("text", systemPrompt)))
-            })
-            put("contents", contentsArray)
-            put("generationConfig", JSONObject().apply {
-                put("temperature", 0.7)
-                put("maxOutputTokens", 600)
-            })
-        }
-
-        // Strictly 2 models as requested: Gemini 2.5 Flash and Gemini 3.5 Flash-Lite
-        val modelCandidates = if (preferredModel.contains("lite", ignoreCase = true) || preferredModel.contains("3.5", ignoreCase = true)) {
-            listOf("gemini-3.5-flash-lite", "gemini-3.1-flash-lite-preview", "gemini-2.5-flash")
-        } else {
-            listOf("gemini-2.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite-preview")
-        }
-
-        var lastErrorMsg = "Unable to connect to Gemini API"
-        var allQuotaExceeded = true
-
-        for (model in modelCandidates) {
-            try {
-                val url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$cleanKey"
-                val requestBuilder = Request.Builder()
-                    .url(url)
-                    .addHeader("x-goog-api-key", cleanKey)
-                    .post(payload.toString().toRequestBody(jsonMediaType))
-
-                val request = requestBuilder.build()
-                val response = client.newCall(request).execute()
-                val body = response.body?.string() ?: ""
-
-                if (response.isSuccessful && body.isNotBlank()) {
-                    return parseGeminiResponse(body)
-                }
-
-                var parsedError = "HTTP ${response.code}"
-                var isApiKeyInvalid = false
-                try {
-                    val errJson = JSONObject(body)
-                    val errObj = errJson.optJSONObject("error")
-                    val msg = errObj?.optString("message")
-                    if (!msg.isNullOrBlank()) {
-                        parsedError = msg
-                        if (msg.contains("API key not valid", ignoreCase = true) ||
-                            msg.contains("API_KEY_INVALID", ignoreCase = true)
-                        ) {
-                            isApiKeyInvalid = true
-                        }
-                    }
-                } catch (_: Exception) {}
-
-                lastErrorMsg = "Gemini ($model): $parsedError"
-
-                // If invalid API key entirely, stop immediately and warn user
-                if (isApiKeyInvalid || (response.code == 400 && parsedError.contains("API key", ignoreCase = true))) {
-                    return LlmResponse(
-                        spokenText = "Invalid Gemini API Key: Please verify your API key in Settings.",
-                        isError = true
-                    )
-                }
-
-                if (response.code != 429) {
-                    allQuotaExceeded = false
-                }
-
-                // Try next model if 404, 429, 503, etc.
-                continue
-            } catch (e: Exception) {
-                allQuotaExceeded = false
-                lastErrorMsg = e.localizedMessage ?: "Network error"
-            }
-        }
-
-        val finalMessage = if (allQuotaExceeded) {
-            "Gemini Free Tier rate limit reached. Please wait 10 seconds and try again."
-        } else {
-            "API Error: $lastErrorMsg. Please verify your API key in Settings."
-        }
-
-        return LlmResponse(
-            spokenText = finalMessage,
-            isError = true
-        )
     }
 
     private fun callOpenAiCompatible(
@@ -233,8 +156,8 @@ class LlmClient {
                 put("content", systemPrompt)
             })
 
-            val recentHistory = history.takeLast(6)
-            for (turn in recentHistory) {
+            val recent = history.takeLast(6)
+            for (turn in recent) {
                 messages.put(JSONObject().apply {
                     put("role", if (turn.second) "user" else "assistant")
                     put("content", turn.first)
@@ -259,11 +182,11 @@ class LlmClient {
                 .post(payload.toString().toRequestBody(jsonMediaType))
                 .build()
 
-            val response = client.newCall(request).execute()
+            val response = httpClient.newCall(request).execute()
             val body = response.body?.string() ?: ""
 
             if (!response.isSuccessful) {
-                return LlmResponse(spokenText = "Error from $model: ${response.code}", isError = true)
+                return LlmResponse(spokenText = "Error from $model (${response.code}): $body", isError = true)
             }
 
             val json = JSONObject(body)
@@ -271,17 +194,8 @@ class LlmClient {
             val rawReply = choices?.optJSONObject(0)?.optJSONObject("message")?.optString("content") ?: ""
             parseRawLlmReply(rawReply)
         } catch (e: Exception) {
-            LlmResponse(spokenText = "Error connecting to provider: ${e.message}", isError = true)
+            LlmResponse(spokenText = "Error connecting to $model: ${e.message}", isError = true)
         }
-    }
-
-    private fun parseGeminiResponse(body: String): LlmResponse {
-        val json = JSONObject(body)
-        val candidates = json.optJSONArray("candidates")
-        val content = candidates?.optJSONObject(0)?.optJSONObject("content")
-        val parts = content?.optJSONArray("parts")
-        val rawText = parts?.optJSONObject(0)?.optString("text") ?: ""
-        return parseRawLlmReply(rawText)
     }
 
     private fun parseRawLlmReply(rawText: String): LlmResponse {
@@ -320,7 +234,7 @@ class LlmClient {
             .trim()
 
         return LlmResponse(
-            spokenText = spoken.ifBlank { "ঠিক আছে, সম্পন্ন করছি।" },
+            spokenText = spoken.ifBlank { "Done." },
             actionJson = actionJson,
             memoryToSave = memoryToSave
         )
