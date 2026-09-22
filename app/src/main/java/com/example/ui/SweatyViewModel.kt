@@ -257,7 +257,8 @@ class SweatyViewModel(private val app: SweatyApp) : ViewModel() {
                     "openai" -> securePrefs.openAiApiKey
                     "grok" -> securePrefs.grokApiKey
                     else -> securePrefs.geminiApiKey
-                }
+                },
+                geminiModel = securePrefs.geminiModel
             )
 
             _lastAssistantReply.value = llmResponse.spokenText

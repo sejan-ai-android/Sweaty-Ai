@@ -113,6 +113,8 @@
     <string name="settings_lang_en">English</string>
     <string name="settings_lang_bn">বাংলা (Bengali)</string>
     <string name="settings_ai_provider">AI Provider</string>
+    <string name="settings_gemini_model">Gemini Model Tier</string>
+    <string name="settings_gemini_model_desc">Select your preferred model or let Sweaty automatically fallback across free tier models.</string>
     <string name="settings_api_keys">AI Provider API Keys</string>
     <string name="settings_gemini_key">Google Gemini API Key</string>
     <string name="settings_openai_key">OpenAI API Key (Optional)</string>

@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -69,6 +71,7 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
 
     var selectedLang by remember { mutableStateOf(prefs.language) }
     var selectedProvider by remember { mutableStateOf(prefs.selectedProvider) }
+    var selectedGeminiModel by remember { mutableStateOf(prefs.geminiModel) }
     var geminiKey by remember { mutableStateOf(prefs.geminiApiKey) }
     var openAiKey by remember { mutableStateOf(prefs.openAiApiKey) }
     var grokKey by remember { mutableStateOf(prefs.grokApiKey) }
@@ -142,7 +145,7 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(
-                        "gemini" to "Google Gemini (Flash)",
+                        "gemini" to "Google Gemini (Free Tier)",
                         "openai" to "OpenAI (GPT-4o)",
                         "grok" to "xAI Grok-2"
                     ).forEach { (pKey, pLabel) ->
@@ -155,6 +158,56 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
                             },
                             label = { Text(pLabel, fontSize = 11.sp) }
                         )
+                    }
+                }
+            }
+        }
+
+        // 2b. Gemini Model Selector (Free Tier)
+        if (selectedProvider == "gemini") {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = stringResource(R.string.settings_gemini_model),
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.settings_gemini_model_desc),
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    @OptIn(ExperimentalLayoutApi::class)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf(
+                            "auto" to "⚡ Auto-Fallback (All Free Models)",
+                            "gemini-2.5-flash" to "⚡ Gemini 2.5 Flash",
+                            "gemini-2.5-flash-lite" to "🚀 Gemini 2.5 Flash-Lite",
+                            "gemini-flash-latest" to "🌟 Gemini Flash Latest",
+                            "gemini-3.1-flash-lite-preview" to "✨ Gemini 3.1 Flash-Lite",
+                            "gemini-2.0-flash" to "💡 Gemini 2.0 Flash",
+                            "gemini-2.0-flash-lite" to "💡 Gemini 2.0 Flash-Lite"
+                        ).forEach { (mKey, mLabel) ->
+                            val isSel = selectedGeminiModel == mKey
+                            FilterChip(
+                                selected = isSel,
+                                onClick = {
+                                    selectedGeminiModel = mKey
+                                    prefs.geminiModel = mKey
+                                },
+                                label = { Text(mLabel, fontSize = 11.sp) }
+                            )
+                        }
                     }
                 }
             }
@@ -238,6 +291,7 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
                         prefs.geminiApiKey = geminiKey
                         prefs.openAiApiKey = openAiKey
                         prefs.grokApiKey = grokKey
+                        prefs.geminiModel = selectedGeminiModel
                         saveFeedback = "API Keys saved securely in Android Keystore!"
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = CyanNeon, contentColor = Color.Black),

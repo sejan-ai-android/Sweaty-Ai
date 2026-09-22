@@ -33,7 +33,8 @@ class LlmClient {
         history: List<Pair<String, Boolean>>, // (text, isUser)
         memories: List<Memory>,
         provider: String,
-        apiKey: String
+        apiKey: String,
+        geminiModel: String = "auto"
     ): LlmResponse = withContext(Dispatchers.IO) {
         val cleanKey = apiKey.trim().removeSurrounding("\"").removeSurrounding("'")
         if (cleanKey.isBlank()) {
@@ -63,7 +64,8 @@ class LlmClient {
                 apiKey = cleanKey,
                 systemPrompt = systemPrompt,
                 history = history,
-                userInput = userInput
+                userInput = userInput,
+                preferredModel = geminiModel
             )
         }
     }
@@ -104,7 +106,8 @@ class LlmClient {
         apiKey: String,
         systemPrompt: String,
         history: List<Pair<String, Boolean>>,
-        userInput: String
+        userInput: String,
+        preferredModel: String = "auto"
     ): LlmResponse {
         val cleanKey = apiKey.trim().removeSurrounding("\"").removeSurrounding("'")
 
@@ -138,16 +141,26 @@ class LlmClient {
             })
         }
 
-        // Supported models in priority order
-        val modelCandidates = listOf(
+        // Comprehensive list of all Gemini Free Tier models
+        val allFreeTierModels = listOf(
             "gemini-2.5-flash",
+            "gemini-2.5-flash-lite",
             "gemini-flash-latest",
+            "gemini-3.1-flash-lite-preview",
             "gemini-2.5-flash-preview-12-2025",
             "gemini-3.5-flash",
-            "gemini-3.1-pro-preview"
+            "gemini-2.0-flash",
+            "gemini-2.0-flash-lite"
         )
 
+        val modelCandidates = if (preferredModel.isNotBlank() && preferredModel != "auto") {
+            listOf(preferredModel) + allFreeTierModels.filter { it != preferredModel }
+        } else {
+            allFreeTierModels
+        }
+
         var lastErrorMsg = "Unable to connect to Gemini API"
+        var allQuotaExceeded = true
 
         for (model in modelCandidates) {
             try {
@@ -166,34 +179,52 @@ class LlmClient {
                 }
 
                 var parsedError = "HTTP ${response.code}"
+                var isApiKeyInvalid = false
                 try {
                     val errJson = JSONObject(body)
                     val errObj = errJson.optJSONObject("error")
                     val msg = errObj?.optString("message")
+                    val status = errObj?.optString("status")
                     if (!msg.isNullOrBlank()) {
                         parsedError = msg
+                        if (msg.contains("API key not valid", ignoreCase = true) ||
+                            msg.contains("API_KEY_INVALID", ignoreCase = true)
+                        ) {
+                            isApiKeyInvalid = true
+                        }
                     }
                 } catch (_: Exception) {}
 
                 lastErrorMsg = "Gemini ($model): $parsedError"
 
-                // If 404 (model not found on this endpoint tier), continue to next model candidate
-                if (response.code == 404) {
-                    continue
-                } else if (response.code == 400 || response.code == 403) {
-                    // Invalid key or permission error
+                // If invalid API key entirely, stop immediately and warn user
+                if (isApiKeyInvalid || (response.code == 400 && parsedError.contains("API key", ignoreCase = true))) {
                     return LlmResponse(
-                        spokenText = "Gemini API Error (${response.code}): $parsedError. Please verify your API key in Settings.",
+                        spokenText = "Invalid Gemini API Key: Please verify your API key in Settings.",
                         isError = true
                     )
                 }
+
+                if (response.code != 429) {
+                    allQuotaExceeded = false
+                }
+
+                // If 404 (model not found), 429 (quota/rate-limit), 503 (busy), 500, or model-not-supported 400, continue to next candidate
+                continue
             } catch (e: Exception) {
+                allQuotaExceeded = false
                 lastErrorMsg = e.localizedMessage ?: "Network error"
             }
         }
 
+        val finalMessage = if (allQuotaExceeded) {
+            "Gemini Free Tier rate limit reached. All free-tier models were tried. Please wait 10-15 seconds and try again."
+        } else {
+            "API Error: $lastErrorMsg. Please verify your API key in Settings."
+        }
+
         return LlmResponse(
-            spokenText = "API Error: $lastErrorMsg. Please verify your API key in Settings.",
+            spokenText = finalMessage,
             isError = true
         )
     }

@@ -147,6 +147,10 @@ class SecurePreferences(context: Context) {
         get() = prefs.getString(PREF_PROVIDER, "gemini") ?: "gemini"
         set(value) = prefs.edit().putString(PREF_PROVIDER, value).apply()
 
+    var geminiModel: String
+        get() = prefs.getString(PREF_GEMINI_MODEL, "auto") ?: "auto"
+        set(value) = prefs.edit().putString(PREF_GEMINI_MODEL, value).apply()
+
     companion object {
         private const val KEY_ALIAS = "SweatyKey_v1"
         private const val PREF_GEMINI_KEY = "encrypted_gemini_key"
@@ -159,5 +163,6 @@ class SecurePreferences(context: Context) {
         private const val PREF_SPEECH_RATE = "pref_speech_rate"
         private const val PREF_SPEECH_PITCH = "pref_speech_pitch"
         private const val PREF_PROVIDER = "pref_provider"
+        private const val PREF_GEMINI_MODEL = "pref_gemini_model"
     }
 }
