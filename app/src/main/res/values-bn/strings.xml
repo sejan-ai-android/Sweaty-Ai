@@ -1,0 +1,104 @@
+<resources>
+    <string name="app_name">সোয়েটি এআই</string>
+    <string name="app_tagline">তোমার ভয়েস-ফার্স্ট AI — মনে রাখে, মনে করায়, আর ডিভাইস নিয়ন্ত্রণ করে।</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">হোম</string>
+    <string name="nav_chat">চ্যাট</string>
+    <string name="nav_memory">মেমরি</string>
+    <string name="nav_reminders">রিমাইন্ডার</string>
+    <string name="nav_device_control">কন্ট্রোল</string>
+    <string name="nav_settings">সেটিংস</string>
+
+    <!-- Voice Orb States -->
+    <string name="state_idle">ট্যাপ করুন বা বলুন \"হেই সোয়েটি\"</string>
+    <string name="state_listening">শুনছি, বলুন…</string>
+    <string name="state_thinking">ভাবছি ও প্রস্তুত করছি…</string>
+    <string name="state_speaking">সোয়েটি কথা বলছে…</string>
+    <string name="state_error">শুনতে পাইনি। আবার ট্যাপ করুন।</string>
+
+    <!-- Quick Prompts / Actions -->
+    <string name="quick_remind_me">আমাকে কাল সারা-কে ফোন করতে মনে করিয়ে দিও</string>
+    <string name="quick_briefing">আজকের সকালের ব্রিফিং দিন</string>
+    <string name="quick_open_whatsapp">হোয়াটসঅ্যাপ ওপেন করুন</string>
+    <string name="quick_what_weather">আজকের আবহাওয়া কেমন?</string>
+    <string name="quick_take_screenshot">স্ক্রিনশট নিন</string>
+    <string name="action_panic_stop">থামো (প্যানিক স্টপ)</string>
+    <string name="action_tap_to_talk">কথা বলতে ট্যাপ করুন</string>
+    <string name="action_stop_listening">বন্ধ করুন</string>
+
+    <!-- Chat Screen -->
+    <string name="chat_title">কথোপকথন</string>
+    <string name="chat_input_placeholder">বার্তা বা কমান্ড টাইপ করুন…</string>
+    <string name="chat_send">পাঠান</string>
+    <string name="chat_clear">চ্যাট মুছুন</string>
+    <string name="chat_empty_title">কথা বলার জন্য প্রস্তুত</string>
+    <string name="chat_empty_desc">যেকোনো প্রশ্ন করুন, রিমাইন্ডার দিন বা ডিভাইস নিয়ন্ত্রণের নির্দেশ দিন।</string>
+    <string name="badge_device_action">ডিভাইস অ্যাকশন</string>
+    <string name="badge_memory_saved">মেমরিতে সংরক্ষিত</string>
+
+    <!-- Memory Screen -->
+    <string name="memory_title">ব্যক্তিগত মেমরি</string>
+    <string name="memory_search_hint">মেমরি খুঁজুন (বাংলা বা ইংরেজি)…</string>
+    <string name="memory_add_title">নতুন তথ্য যোগ করুন</string>
+    <string name="memory_key_label">বিষয় / কী</string>
+    <string name="memory_value_label">মনে রাখার বিবরণ</string>
+    <string name="memory_category_label">ক্যাটাগরি</string>
+    <string name="memory_empty">এখনো কোনো মেমরি সংরক্ষণ করা হয়নি। সোয়েটি স্বয়ংক্রিয়ভাবে নাম, পছন্দ ও প্রয়োজনীয় তথ্য মনে রাখে।</string>
+    <string name="memory_save">সংরক্ষণ করুন</string>
+    <string name="memory_delete_confirm">এই মেমরি মুছে ফেলতে চান?</string>
+    <string name="cat_personal">ব্যক্তিগত</string>
+    <string name="cat_work">কাজ</string>
+    <string name="cat_preference">পছন্দ</string>
+    <string name="cat_general">সাধারণ</string>
+
+    <!-- Reminders Screen -->
+    <string name="reminders_title">রিমাইন্ডার ও ক্যালেন্ডার</string>
+    <string name="reminders_add">নতুন রিমাইন্ডার</string>
+    <string name="reminders_empty">কোনো রিমাইন্ডার নেই। ভয়েসে বলুন \"আমাকে মনে করিয়ে দিও…\"</string>
+    <string name="reminders_morning_briefing">মর্নিং ব্রিফিং শুনুন</string>
+    <string name="reminder_title_label">রিমাইন্ডারের শিরোনাম</string>
+    <string name="reminder_date_label">তারিখ ও সময়</string>
+    <string name="reminder_save">রিমাইন্ডার সেট করুন</string>
+    <string name="reminder_completed">সম্পন্ন</string>
+    <string name="reminder_upcoming">আসন্ন</string>
+
+    <!-- Device Control Screen -->
+    <string name="control_title">ডিভাইস কন্ট্রোল (এক্সেসিবিলিটি)</string>
+    <string name="control_service_status">এক্সেসিবিলিটি সার্ভিস</string>
+    <string name="control_status_active">সক্রিয় ও প্রস্তুত</string>
+    <string name="control_status_inactive">নিষ্ক্রিয় (অনুমতি প্রয়োজন)</string>
+    <string name="control_open_settings">সেটিংসে অন করুন</string>
+    <string name="control_restricted_help">অ্যান্ড্রয়েড ১৩+ এ গ্রে থাকলে: অ্যাপ ইনফো > ৩ ডট > \"Allow restricted settings\" সিলেক্ট করুন।</string>
+    <string name="control_test_actions">দ্রুত অ্যাকশন টেস্ট</string>
+    <string name="control_action_back">ব্যাকে যান</string>
+    <string name="control_action_home">হোমে যান</string>
+    <string name="control_action_recents">রিসেন্ট অ্যাপস</string>
+    <string name="control_action_notifs">নোটিফিকেশন</string>
+    <string name="control_action_screenshot">স্ক্রিনশট নিন</string>
+    <string name="control_action_read_screen">স্ক্রিন রিড করুন</string>
+    <string name="control_logs_title">অ্যাকশন হিস্ট্রি ও লগ</string>
+    <string name="control_logs_empty">এখনো কোনো অ্যাকশন কার্যকর করা হয়নি।</string>
+    <string name="control_confirm_dialog_title">অটোনোমাস অ্যাকশন নিশ্চিতকরণ</string>
+    <string name="control_confirm_execute">নিশ্চিত করুন ও চালান</string>
+    <string name="control_confirm_cancel">বাতিল</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">সেটিংস</string>
+    <string name="settings_language">ভাষা / Language</string>
+    <string name="settings_lang_auto">স্বয়ংক্রিয় (Auto-Detect)</string>
+    <string name="settings_lang_en">English (ইংরেজি)</string>
+    <string name="settings_lang_bn">বাংলা (Bengali)</string>
+    <string name="settings_ai_provider">এআই প্রোভাইডার</string>
+    <string name="settings_api_key_gemini">জেমিনাই API কী</string>
+    <string name="settings_api_key_openai">OpenAI API কী (ঐচ্ছিক)</string>
+    <string name="settings_api_key_grok">xAI Grok API কী (ঐচ্ছিক)</string>
+    <string name="settings_api_key_hint">আপনার নিজস্ব API কী লিখুন…</string>
+    <string name="settings_save_keys">API কী সেভ করুন</string>
+    <string name="settings_voice_rate">কথার গতি (Speed)</string>
+    <string name="settings_voice_pitch">ভয়েস পিচ (Pitch)</string>
+    <string name="settings_followup_window">অ্যাক্টিভ ফলো-আপ উইন্ডো</string>
+    <string name="settings_followup_desc">উত্তরের পর ৩০ সেকেন্ড সজাগ থাকবে</string>
+    <string name="settings_privacy_note">সকল কী এবং মেমরি এই ডিভাইসেই AES-256 এনক্রিপশনে সুরক্ষিত। কোনো সার্ভার সিঙ্ক বা ট্র্যাকিং নেই।</string>
+    <string name="settings_keys_saved">API কী নিরাপদে সংরক্ষণ করা হয়েছে।</string>
+</resources>

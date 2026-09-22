@@ -1,0 +1,142 @@
+<resources>
+    <string name="app_name">Sweaty AI</string>
+    <string name="app_tagline">Your voice-first AI that remembers, reminds, and controls your device — completely private.</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_chat">Chat</string>
+    <string name="nav_memory">Memory</string>
+    <string name="nav_reminders">Reminders</string>
+    <string name="nav_control">Control</string>
+    <string name="nav_device_control">Control</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Voice Orb States -->
+    <string name="state_idle">Tap or say \"Hey Sweaty\"</string>
+    <string name="state_listening">Listening to you…</string>
+    <string name="state_thinking">Thinking &amp; analyzing…</string>
+    <string name="state_speaking">Sweaty is speaking…</string>
+    <string name="state_error">Unable to hear. Tap to retry.</string>
+
+    <!-- Quick Prompts / Actions -->
+    <string name="quick_remind_me">Remind me to call Sarah</string>
+    <string name="quick_briefing">Give me my morning briefing</string>
+    <string name="quick_open_whatsapp">Open WhatsApp</string>
+    <string name="quick_what_weather">What is the weather today?</string>
+    <string name="quick_take_screenshot">Take a screenshot</string>
+    <string name="action_panic_stop">PANIC STOP</string>
+    <string name="action_tap_to_talk">Tap to Speak</string>
+    <string name="action_stop_listening">Stop</string>
+
+    <!-- Chat Screen -->
+    <string name="chat_title">Conversation</string>
+    <string name="chat_input_placeholder">Type a message or command…</string>
+    <string name="chat_send">Send</string>
+    <string name="chat_clear">Clear Chat</string>
+    <string name="chat_empty_title">Ready for conversation</string>
+    <string name="chat_empty_desc">Ask a question, set a reminder, or tell Sweaty to perform any device action.</string>
+    <string name="badge_device_action">Device Action</string>
+    <string name="badge_memory_saved">Memory Saved</string>
+
+    <!-- Memory Screen -->
+    <string name="memory_title">Personal Memory</string>
+    <string name="memory_search_hint">Search memories (EN or বাংলা)…</string>
+    <string name="memory_add_title">Add New Memory</string>
+    <string name="memory_key_label">Key / Topic</string>
+    <string name="memory_value_label">Memory Content</string>
+    <string name="memory_category_label">Category</string>
+    <string name="memory_empty">No memories stored yet. Sweaty automatically recalls names, preferences, and important facts.</string>
+    <string name="memory_save">Save Memory</string>
+    <string name="memory_delete_confirm">Delete this memory?</string>
+    <string name="cat_personal">Personal</string>
+    <string name="cat_work">Work</string>
+    <string name="cat_preference">Preference</string>
+    <string name="cat_general">General</string>
+
+    <!-- Reminders Screen -->
+    <string name="reminders_title">Reminders &amp; Calendar</string>
+    <string name="reminders_add">New Reminder</string>
+    <string name="reminders_empty">No pending reminders. Say \"Remind me to…\" to create one.</string>
+    <string name="reminders_morning_briefing">Play Morning Briefing</string>
+    <string name="reminder_title_label">Reminder title</string>
+    <string name="reminder_date_label">Date &amp; Time</string>
+    <string name="reminder_save">Set Reminder</string>
+    <string name="reminder_completed">Completed</string>
+    <string name="reminder_upcoming">Upcoming</string>
+
+    <!-- Device Control Screen -->
+    <string name="control_title">Device Control (Accessibility)</string>
+    <string name="control_service_status">Accessibility Service</string>
+    <string name="control_service_active">Active &amp; Ready</string>
+    <string name="control_service_inactive">Inactive (Needs Permission)</string>
+    <string name="control_status_active">Active &amp; Ready</string>
+    <string name="control_status_inactive">Inactive (Needs Permission)</string>
+    <string name="control_open_settings">Enable in Settings</string>
+    <string name="control_restricted_title">Android 13+ Restricted Settings</string>
+    <string name="control_restricted_desc">If greyed out: Go to Settings > Apps > Sweaty AI > 3 dots (top right) > Allow restricted settings, then enable Accessibility.</string>
+    <string name="control_restricted_help">On Android 13+, if greyed out: Go to App Info > 3 dots > \"Allow restricted settings\".</string>
+    <string name="control_test_bench">Quick Action Testbench</string>
+    <string name="control_test_actions">Quick Action Testbench</string>
+    <string name="control_btn_back">Go Back</string>
+    <string name="control_btn_home">Go Home</string>
+    <string name="control_btn_recents">Recents</string>
+    <string name="control_btn_notifications">Notifications</string>
+    <string name="control_btn_quick_settings">Quick Settings</string>
+    <string name="control_btn_screenshot">Screenshot</string>
+    <string name="control_btn_read_screen">Read Active Screen</string>
+    <string name="control_btn_lock">Lock Screen</string>
+    <string name="control_action_back">Go Back</string>
+    <string name="control_action_home">Go Home</string>
+    <string name="control_action_recents">Recents</string>
+    <string name="control_action_notifs">Notifications</string>
+    <string name="control_action_screenshot">Screenshot</string>
+    <string name="control_action_read_screen">Read Active Screen</string>
+    <string name="control_audit_logs">Action Audit Log</string>
+    <string name="control_logs_title">Action Audit Log</string>
+    <string name="control_logs_empty">No actions executed yet.</string>
+    <string name="control_confirm_dialog_title">Autonomous Action Confirmation</string>
+    <string name="control_confirm_execute">Confirm &amp; Run</string>
+    <string name="control_confirm_cancel">Cancel</string>
+
+    <!-- Dialog Confirmation -->
+    <string name="dialog_confirm_action_title">Autonomous Action Confirmation</string>
+    <string name="dialog_confirm_btn">Confirm &amp; Run</string>
+    <string name="dialog_cancel_btn">Cancel</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_language">Language / ভাষা</string>
+    <string name="lang_auto">Auto-Detect (স্বয়ংক্রিয়)</string>
+    <string name="lang_english">English</string>
+    <string name="lang_bengali">বাংলা (Bengali)</string>
+    <string name="settings_lang_auto">Auto-Detect (স্বয়ংক্রিয়)</string>
+    <string name="settings_lang_en">English</string>
+    <string name="settings_lang_bn">বাংলা (Bengali)</string>
+    <string name="settings_ai_provider">AI Provider</string>
+    <string name="settings_api_keys">AI Provider API Keys</string>
+    <string name="settings_gemini_key">Google Gemini API Key</string>
+    <string name="settings_openai_key">OpenAI API Key (Optional)</string>
+    <string name="settings_grok_key">xAI Grok API Key (Optional)</string>
+    <string name="settings_api_key_gemini">Gemini API Key</string>
+    <string name="settings_api_key_openai">OpenAI API Key (Optional)</string>
+    <string name="settings_api_key_grok">xAI Grok API Key (Optional)</string>
+    <string name="settings_api_key_hint">Enter your personal API key…</string>
+    <string name="settings_save">Save Settings</string>
+    <string name="settings_save_keys">Save API Keys</string>
+    <string name="settings_voice_speed">Voice &amp; Interaction</string>
+    <string name="settings_voice_rate">Speech Rate</string>
+    <string name="settings_voice_pitch">Speech Pitch</string>
+    <string name="settings_followup_window">Active Follow-Up Window (30s)</string>
+    <string name="settings_followup_desc">Stay listening for 30 seconds after responses</string>
+    <string name="settings_always_listening">Always Listening Mode (সর্বদা সক্রিয়)</string>
+    <string name="settings_always_listening_desc">Continuous hands-free listening for voice commands and wake-words</string>
+    <string name="settings_wake_word_only">Wake-Word Only Trigger</string>
+    <string name="settings_wake_word_only_desc">Only respond when \"Hey Sweaty\" or \"সোয়েটি\" is spoken</string>
+    <string name="always_listening_active">Always Listening Active</string>
+    <string name="always_listening_inactive">Always Listening: Off</string>
+    <string name="always_listening_hint_active">Listening for \"Hey Sweaty\" or any command</string>
+    <string name="always_listening_hint_inactive">Tap to enable hands-free listening</string>
+    <string name="settings_privacy_badge">Zero-Telemetry Privacy Engine</string>
+    <string name="settings_privacy_note">All keys and memories are encrypted locally on this device using AES-256. No telemetry or cloud sync.</string>
+    <string name="settings_keys_saved">API keys saved securely.</string>
+</resources>

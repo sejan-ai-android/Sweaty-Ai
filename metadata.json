@@ -1,0 +1,6 @@
+{
+  "name": "Sweaty AI",
+  "description": "Your voice-first AI that remembers, reminds, and controls your device — completely private.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

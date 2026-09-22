@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Glowing Outer Energy Ring (safe within 66dp: radius 26 centered at 54,54) -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M54,54m-27,0a27,27 0 1,0 54,0a27,27 0 1,0 -54,0"
+        android:strokeWidth="2.5">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:angle="45"
+                android:endColor="#06B6D4"
+                android:startColor="#8B5CF6"
+                android:type="linear" />
+        </aapt:attr>
+    </path>
+
+    <!-- Central Glowing Voice Core -->
+    <path
+        android:pathData="M54,54m-19,0a19,19 0 1,0 38,0a19,19 0 1,0 -38,0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:angle="135"
+                android:endColor="#06B6D4"
+                android:startColor="#A855F7"
+                android:type="linear" />
+        </aapt:attr>
+    </path>
+
+    <!-- Soundwave Bars at Center -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M43,50c0,-1.1 0.9,-2 2,-2h0c1.1,0 2,0.9 2,2v8c0,1.1 -0.9,2 -2,2h0c-1.1,0 -2,-0.9 -2,-2z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M49,45c0,-1.1 0.9,-2 2,-2h0c1.1,0 2,0.9 2,2v18c0,1.1 -0.9,2 -2,2h0c-1.1,0 -2,-0.9 -2,-2z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M55,42c0,-1.1 0.9,-2 2,-2h0c1.1,0 2,0.9 2,2v24c0,1.1 -0.9,2 -2,2h0c-1.1,0 -2,-0.9 -2,-2z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M61,46c0,-1.1 0.9,-2 2,-2h0c1.1,0 2,0.9 2,2v16c0,1.1 -0.9,2 -2,2h0c-1.1,0 -2,-0.9 -2,-2z" />
+</vector>
