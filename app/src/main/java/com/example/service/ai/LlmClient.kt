@@ -138,11 +138,12 @@ class LlmClient {
             })
         }
 
-        // Supported models in priority order per Gemini guidelines
+        // Supported models in priority order
         val modelCandidates = listOf(
-            "gemini-3.5-flash",
+            "gemini-2.5-flash",
             "gemini-flash-latest",
             "gemini-2.5-flash-preview-12-2025",
+            "gemini-3.5-flash",
             "gemini-3.1-pro-preview"
         )
 
@@ -156,11 +157,6 @@ class LlmClient {
                     .addHeader("x-goog-api-key", cleanKey)
                     .post(payload.toString().toRequestBody(jsonMediaType))
 
-                // Also support Bearer authentication for Vertex/Cloud tokens starting with AQ or ya29
-                if (cleanKey.startsWith("AQ") || cleanKey.startsWith("ya29")) {
-                    requestBuilder.addHeader("Authorization", "Bearer $cleanKey")
-                }
-
                 val request = requestBuilder.build()
                 val response = client.newCall(request).execute()
                 val body = response.body?.string() ?: ""
@@ -169,7 +165,6 @@ class LlmClient {
                     return parseGeminiResponse(body)
                 }
 
-                // If 404 (model not found on this endpoint/tier), try next candidate
                 var parsedError = "HTTP ${response.code}"
                 try {
                     val errJson = JSONObject(body)
@@ -182,7 +177,7 @@ class LlmClient {
 
                 lastErrorMsg = "Gemini ($model): $parsedError"
 
-                // If error is 404, continue to next model candidate
+                // If 404 (model not found on this endpoint tier), continue to next model candidate
                 if (response.code == 404) {
                     continue
                 } else if (response.code == 400 || response.code == 403) {
