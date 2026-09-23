@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -13,9 +14,9 @@ import com.example.data.model.ActionLog
 import com.example.data.model.ChatMessage
 import com.example.data.model.Memory
 import com.example.data.model.Reminder
-import com.example.domain.SecurePreferences
 import com.example.domain.nlp.BengaliDateTimeParser
 import com.example.domain.nlp.LanguageDetector
+import com.example.domain.SecurePreferences
 import com.example.service.AssistantVoiceState
 import com.example.service.DeviceActionExecutor
 import com.example.service.ExecutionResult
@@ -45,7 +46,7 @@ enum class NavScreen {
     SETTINGS
 }
 
-class SweatyViewModel(private val app: SweatyApp) : ViewModel() {
+class SweatyViewModel(private val app: SweatyApp) : AndroidViewModel(app) {
 
     private val db = app.database
     val securePrefs: SecurePreferences = app.securePreferences
@@ -55,14 +56,15 @@ class SweatyViewModel(private val app: SweatyApp) : ViewModel() {
     private val _currentScreen = MutableStateFlow(NavScreen.HOME)
     val currentScreen: StateFlow<NavScreen> = _currentScreen.asStateFlow()
 
+    // State flows
     private val _voiceState = MutableStateFlow(AssistantVoiceState.IDLE)
     val voiceState: StateFlow<AssistantVoiceState> = _voiceState.asStateFlow()
 
-    private val _audioRms = MutableStateFlow(0f)
-    val audioRms: StateFlow<Float> = _audioRms.asStateFlow()
-
     private val _liveTranscript = MutableStateFlow("")
     val liveTranscript: StateFlow<String> = _liveTranscript.asStateFlow()
+
+    private val _audioRms = MutableStateFlow(0f)
+    val audioRms: StateFlow<Float> = _audioRms.asStateFlow()
 
     private val _lastAssistantReply = MutableStateFlow<String?>(null)
     val lastAssistantReply: StateFlow<String?> = _lastAssistantReply.asStateFlow()
@@ -75,14 +77,6 @@ class SweatyViewModel(private val app: SweatyApp) : ViewModel() {
 
     private val _memorySearchQuery = MutableStateFlow("")
     val memorySearchQuery: StateFlow<String> = _memorySearchQuery.asStateFlow()
-
-    val appCheckDebugToken: StateFlow<String?> = com.example.service.ai.AppCheckTokenProvider.debugToken
-
-    fun regenerateAppCheckToken() {
-        val newToken = java.util.UUID.randomUUID().toString()
-        securePrefs.appCheckDebugToken = newToken
-        com.example.service.ai.AppCheckTokenProvider.initializeToken(app, securePrefs)
-    }
 
     private var followUpJob: Job? = null
 
@@ -159,43 +153,81 @@ class SweatyViewModel(private val app: SweatyApp) : ViewModel() {
         }
     }
 
-    fun onPermissionsChecked(hasMicPermission: Boolean) {
-        if (hasMicPermission) {
-            speechManager.initialize()
-            if (securePrefs.alwaysListeningEnabled) {
-                speechManager.setAlwaysListening(true, securePrefs.wakeWordOnly)
-            }
+    fun navigateTo(screen: NavScreen) {
+        _currentScreen.value = screen
+    }
+
+    fun onPermissionsChecked(granted: Boolean) {
+        if (granted && securePrefs.alwaysListeningEnabled) {
+            speechManager.setAlwaysListening(true, securePrefs.wakeWordOnly)
         }
     }
 
     fun toggleAlwaysListening() {
-        val newState = !speechManager.isAlwaysListening.value
+        val newState = !isAlwaysListening.value
         setAlwaysListening(newState)
+    }
+
+    fun setLanguage(language: String) {
+        securePrefs.language = language
+    }
+
+    fun setSpeechRate(rate: Float) {
+        securePrefs.speechRate = rate
+    }
+
+    fun setSpeechPitch(pitch: Float) {
+        securePrefs.speechPitch = pitch
+    }
+
+    fun setAiProvider(provider: String) {
+        securePrefs.selectedProvider = provider
+    }
+
+    fun setGeminiModel(model: String) {
+        securePrefs.geminiModel = model
+    }
+
+    fun setGeminiApiKey(key: String) {
+        securePrefs.geminiApiKey = key
+    }
+
+    fun setOpenAiApiKey(key: String) {
+        securePrefs.openAiApiKey = key
+    }
+
+    fun setGrokApiKey(key: String) {
+        securePrefs.grokApiKey = key
+    }
+
+    fun setActiveFollowUpEnabled(enabled: Boolean) {
+        securePrefs.activeFollowUpEnabled = enabled
+        if (!enabled) {
+            followUpJob?.cancel()
+            _followUpRemainingSeconds.value = 0
+        }
     }
 
     fun setAlwaysListening(enabled: Boolean) {
         securePrefs.alwaysListeningEnabled = enabled
-        speechManager.setAlwaysListening(enabled, _wakeWordOnly.value)
+        speechManager.setAlwaysListening(enabled, securePrefs.wakeWordOnly)
     }
 
     fun setWakeWordOnly(enabled: Boolean) {
-        _wakeWordOnly.value = enabled
         securePrefs.wakeWordOnly = enabled
-        if (speechManager.isAlwaysListening.value) {
+        _wakeWordOnly.value = enabled
+        if (securePrefs.alwaysListeningEnabled) {
             speechManager.setAlwaysListening(true, enabled)
         }
     }
 
-    private fun onWakeWordOnlyDetected() {
-        val lang = if (securePrefs.language == "bn") "bn" else "en"
-        val reply = if (lang == "bn") "হ্যাঁ, বলুন, শুনছি!" else "Yes? I'm listening!"
-        _lastAssistantReply.value = reply
-        _liveTranscript.value = if (lang == "bn") "সোয়েটি" else "Hey Sweaty"
-        ttsManager.speak(reply, securePrefs.speechRate, securePrefs.speechPitch)
-    }
-
-    fun navigateTo(screen: NavScreen) {
-        _currentScreen.value = screen
+    fun onWakeWordOnlyDetected() {
+        ttsManager.stop()
+        followUpJob?.cancel()
+        _followUpRemainingSeconds.value = 0
+        val prompt = if (securePrefs.language == "bn") "বলুন, আমি শুনছি।" else "I'm listening."
+        _lastAssistantReply.value = prompt
+        ttsManager.speak(prompt, securePrefs.speechRate, securePrefs.speechPitch)
     }
 
     fun toggleVoiceListening() {
@@ -264,7 +296,7 @@ class SweatyViewModel(private val app: SweatyApp) : ViewModel() {
                 apiKey = when (securePrefs.selectedProvider) {
                     "openai" -> securePrefs.openAiApiKey
                     "grok" -> securePrefs.grokApiKey
-                    else -> ""
+                    else -> securePrefs.geminiApiKey
                 },
                 geminiModel = securePrefs.geminiModel
             )
@@ -384,9 +416,7 @@ class SweatyViewModel(private val app: SweatyApp) : ViewModel() {
     fun playMorningBriefing() {
         viewModelScope.launch {
             val lang = if (securePrefs.language == "bn") "bn" else "en"
-            val now = System.currentTimeMillis()
             val pendingReminders = db.reminderDao().getPendingRemindersList()
-            val memories = db.memoryDao().getRecentMemories(5)
 
             val greeting = if (lang == "bn") "শুভ সকাল!" else "Good morning!"
             val reminderCount = pendingReminders.size

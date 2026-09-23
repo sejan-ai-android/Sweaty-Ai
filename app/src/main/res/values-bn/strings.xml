@@ -90,12 +90,10 @@
     <string name="settings_lang_en">English (ইংরেজি)</string>
     <string name="settings_lang_bn">বাংলা (Bengali)</string>
     <string name="settings_ai_provider">এআই প্রোভাইডার</string>
-    <string name="settings_gemini_firebase_badge">জেমিনাই Firebase AI Logic দ্বারা চালিত (কোনো API কী প্রয়োজন নেই)।</string>
-    <string name="settings_appcheck_title">Firebase App Check ডিবাগ টোকেন</string>
-    <string name="settings_appcheck_desc">Firebase Console → App Check → Manage debug tokens-এ এই টোকেনটি যুক্ত করুন যাতে ডিভাইসে Gemini নির্বিঘ্নে কাজ করে।</string>
-    <string name="settings_appcheck_copy">টোকেন কপি করুন</string>
-    <string name="settings_appcheck_copied">ডিবাগ টোকেন ক্লিপবোর্ডে কপি করা হয়েছে!</string>
-    <string name="settings_appcheck_regenerate">নতুন টোকেন তৈরি করুন</string>
+    <string name="settings_gemini_key">Google AI Studio Gemini API কী</string>
+    <string name="settings_gemini_key_hint">আপনার AI Studio API কী লিখুন (AQ... দিয়ে শুরু)</string>
+    <string name="settings_gemini_model">Gemini মডেল</string>
+    <string name="settings_gemini_model_badge">অফিসিয়াল Google AI SDK (com.google.ai.client.generativeai) দ্বারা চালিত।</string>
     <string name="settings_api_key_openai">OpenAI API কী (ঐচ্ছিক)</string>
     <string name="settings_api_key_grok">xAI Grok API কী (ঐচ্ছিক)</string>
     <string name="settings_api_key_hint">আপনার নিজস্ব API কী লিখুন…</string>

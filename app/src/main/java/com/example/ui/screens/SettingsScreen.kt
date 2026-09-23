@@ -19,11 +19,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.RecordVoiceOver
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Visibility
@@ -36,7 +35,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -52,11 +50,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -78,9 +73,11 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
     var selectedLang by remember { mutableStateOf(prefs.language) }
     var selectedProvider by remember { mutableStateOf(prefs.selectedProvider) }
     var selectedGeminiModel by remember { mutableStateOf(prefs.geminiModel) }
+    var geminiKey by remember { mutableStateOf(prefs.geminiApiKey) }
     var openAiKey by remember { mutableStateOf(prefs.openAiApiKey) }
     var grokKey by remember { mutableStateOf(prefs.grokApiKey) }
 
+    var showGeminiKey by remember { mutableStateOf(false) }
     var showOpenAiKey by remember { mutableStateOf(false) }
     var showGrokKey by remember { mutableStateOf(false) }
 
@@ -89,9 +86,6 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
     var speechPitch by remember { mutableFloatStateOf(prefs.speechPitch) }
 
     var saveFeedback by remember { mutableStateOf<String?>(null) }
-    var tokenCopiedFeedback by remember { mutableStateOf(false) }
-    val clipboardManager = LocalClipboardManager.current
-    val debugToken by viewModel.appCheckDebugToken.collectAsState()
 
     Column(
         modifier = Modifier
@@ -122,13 +116,13 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(
-                        "auto" to stringResource(R.string.lang_auto),
-                        "en" to stringResource(R.string.lang_english),
-                        "bn" to stringResource(R.string.lang_bengali)
+                        "auto" to stringResource(R.string.settings_lang_auto),
+                        "en" to stringResource(R.string.settings_lang_en),
+                        "bn" to stringResource(R.string.settings_lang_bn)
                     ).forEach { (code, label) ->
-                        val isSel = selectedLang == code
+                        val isSelected = selectedLang == code
                         FilterChip(
-                            selected = isSel,
+                            selected = isSelected,
                             onClick = {
                                 selectedLang = code
                                 prefs.language = code
@@ -152,7 +146,7 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(
-                        "gemini" to "Google Gemini (Firebase AI)",
+                        "gemini" to "Google Gemini (Official SDK)",
                         "openai" to "OpenAI (GPT-4o)",
                         "grok" to "xAI Grok-2"
                     ).forEach { (pKey, pLabel) ->
@@ -170,7 +164,7 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
             }
         }
 
-        // 2b. Gemini Model Selector & Firebase AI Badge
+        // 2b. Gemini Model Selector & Badge
         if (selectedProvider == "gemini") {
             Card(
                 shape = RoundedCornerShape(16.dp),
@@ -185,7 +179,6 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
                     )
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    // Read-only label
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -193,7 +186,7 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
                             .padding(horizontal = 12.dp, vertical = 8.dp)
                     ) {
                         Text(
-                            text = "✨ Gemini is powered by Firebase AI Logic (no API key required).",
+                            text = "⚡ Powered by official Google AI Client SDK (com.google.ai.client.generativeai)",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium,
                             color = CyanNeon
@@ -227,86 +220,7 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
             }
         }
 
-        // 2c. Firebase App Check Token Viewer
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
-            modifier = Modifier.fillMaxWidth().testTag("appcheck_debug_card")
-        ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(imageVector = Icons.Default.Security, contentDescription = null, tint = EmeraldGlow, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.settings_appcheck_title), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                }
-
-                Text(
-                    text = stringResource(R.string.settings_appcheck_desc),
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                // Debug Token Display Box
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 12.dp, vertical = 10.dp)
-                ) {
-                    Text(
-                        text = debugToken ?: "Generating token...",
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = EmeraldGlow,
-                        modifier = Modifier.testTag("appcheck_debug_token_text")
-                    )
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Button(
-                        onClick = {
-                            debugToken?.let { token ->
-                                clipboardManager.setText(AnnotatedString(token))
-                                tokenCopiedFeedback = true
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = EmeraldGlow, contentColor = Color.Black),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.weight(1f).testTag("copy_debug_token_button")
-                    ) {
-                        Icon(
-                            imageVector = if (tokenCopiedFeedback) Icons.Default.Check else Icons.Default.ContentCopy,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (tokenCopiedFeedback) stringResource(R.string.settings_appcheck_copied) else stringResource(R.string.settings_appcheck_copy),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    OutlinedButton(
-                        onClick = {
-                            viewModel.regenerateAppCheckToken()
-                            tokenCopiedFeedback = false
-                        },
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.testTag("regenerate_debug_token_button")
-                    ) {
-                        Icon(imageVector = Icons.Default.Refresh, contentDescription = "Regenerate", modifier = Modifier.size(16.dp))
-                    }
-                }
-            }
-        }
-
-        // 3. Optional Third-Party API Keys (OpenAI & Grok)
+        // 3. API Keys Configuration (Encrypted)
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
@@ -318,6 +232,26 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(stringResource(R.string.settings_api_keys), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                 }
+
+                // Google AI Studio Key
+                OutlinedTextField(
+                    value = geminiKey,
+                    onValueChange = { geminiKey = it },
+                    label = { Text(stringResource(R.string.settings_gemini_key)) },
+                    placeholder = { Text(stringResource(R.string.settings_gemini_key_hint)) },
+                    singleLine = true,
+                    visualTransformation = if (showGeminiKey) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    trailingIcon = {
+                        IconButton(onClick = { showGeminiKey = !showGeminiKey }) {
+                            Icon(
+                                imageVector = if (showGeminiKey) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = "Toggle visibility"
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().testTag("gemini_key_input")
+                )
 
                 // OpenAI Key
                 OutlinedTextField(
@@ -361,6 +295,7 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
 
                 Button(
                     onClick = {
+                        prefs.geminiApiKey = geminiKey
                         prefs.openAiApiKey = openAiKey
                         prefs.grokApiKey = grokKey
                         prefs.geminiModel = selectedGeminiModel
@@ -448,60 +383,75 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(stringResource(R.string.settings_followup_window), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                        Text("Keep mic listening 30s after assistant response", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.settings_followup_desc), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Switch(
                         checked = followUpEnabled,
                         onCheckedChange = {
                             followUpEnabled = it
-                            prefs.activeFollowUpEnabled = it
-                        }
+                            viewModel.setActiveFollowUpEnabled(it)
+                        },
+                        modifier = Modifier.testTag("settings_followup_switch")
                     )
                 }
 
-                // Speech Rate
+                // Speed Slider
                 Column {
-                    Text("Speech Rate: ${String.format(Locale.US, "%.1fx", speechRate)}", fontSize = 13.sp)
+                    Text("${stringResource(R.string.settings_voice_rate)}: ${String.format(Locale.US, "%.1fx", speechRate)}", fontSize = 13.sp)
                     Slider(
                         value = speechRate,
-                        onValueChange = {
-                            speechRate = it
-                            prefs.speechRate = it
-                        },
-                        valueRange = 0.6f..1.6f,
-                        steps = 5
+                        onValueChange = { speechRate = it },
+                        onValueChangeFinished = { viewModel.setSpeechRate(speechRate) },
+                        valueRange = 0.5f..2.0f,
+                        steps = 5,
+                        modifier = Modifier.testTag("speech_rate_slider")
                     )
                 }
 
-                // Speech Pitch
+                // Pitch Slider
                 Column {
-                    Text("Speech Pitch: ${String.format(Locale.US, "%.1fx", speechPitch)}", fontSize = 13.sp)
+                    Text("${stringResource(R.string.settings_voice_pitch)}: ${String.format(Locale.US, "%.1fx", speechPitch)}", fontSize = 13.sp)
                     Slider(
                         value = speechPitch,
-                        onValueChange = {
-                            speechPitch = it
-                            prefs.speechPitch = it
-                        },
-                        valueRange = 0.6f..1.4f,
-                        steps = 4
+                        onValueChange = { speechPitch = it },
+                        onValueChangeFinished = { viewModel.setSpeechPitch(speechPitch) },
+                        valueRange = 0.5f..1.5f,
+                        steps = 4,
+                        modifier = Modifier.testTag("speech_pitch_slider")
                     )
                 }
             }
         }
 
-        // 5. Privacy & Zero-Telemetry Badge
+        // 5. Zero-Telemetry Privacy Card
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(imageVector = Icons.Default.Security, contentDescription = null, tint = EmeraldGlow, modifier = Modifier.size(24.dp))
-                Spacer(modifier = Modifier.width(10.dp))
+            Row(
+                modifier = Modifier.padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(EmeraldGlow.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(imageVector = Icons.Default.Security, contentDescription = null, tint = EmeraldGlow, modifier = Modifier.size(20.dp))
+                }
+                Spacer(modifier = Modifier.width(12.dp))
                 Column {
-                    Text(stringResource(R.string.settings_privacy_badge), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     Text(
-                        text = "Encrypted at rest with AES-256-GCM Keystore. Database, memories, logs, and device control stay strictly on-device.",
+                        stringResource(R.string.settings_privacy_badge),
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        stringResource(R.string.settings_privacy_note),
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

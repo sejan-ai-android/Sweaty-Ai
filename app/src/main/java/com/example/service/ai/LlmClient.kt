@@ -19,13 +19,13 @@ data class LlmResponse(
 )
 
 class LlmClient(
-    private val firebaseGeminiService: FirebaseGeminiService = FirebaseGeminiService()
+    private val googleAiGeminiService: GoogleAiGeminiService = GoogleAiGeminiService()
 ) {
 
     private val httpClient = OkHttpClient.Builder()
-        .connectTimeout(12, TimeUnit.SECONDS)
-        .readTimeout(20, TimeUnit.SECONDS)
-        .writeTimeout(12, TimeUnit.SECONDS)
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(15, TimeUnit.SECONDS)
         .retryOnConnectionFailure(true)
         .build()
 
@@ -71,8 +71,12 @@ class LlmClient(
                 )
             }
             else -> {
-                // Gemini is powered by Firebase AI Logic (No user API key required!)
-                callFirebaseGemini(
+                val cleanKey = apiKey.trim().removeSurrounding("\"").removeSurrounding("'")
+                if (cleanKey.isBlank()) {
+                    return@withContext handleOfflineOrMissingKey(userInput, "Google AI Studio API Key")
+                }
+                callGoogleAiGemini(
+                    apiKey = cleanKey,
                     systemPrompt = systemPrompt,
                     history = history,
                     userInput = userInput,
@@ -82,7 +86,8 @@ class LlmClient(
         }
     }
 
-    private suspend fun callFirebaseGemini(
+    private suspend fun callGoogleAiGemini(
+        apiKey: String,
         systemPrompt: String,
         history: List<Pair<String, Boolean>>,
         userInput: String,
@@ -92,14 +97,15 @@ class LlmClient(
             (if (isUser) "user" else "model") to text
         }
 
-        val rawResponse = firebaseGeminiService.generateChatResponse(
+        val rawResponse = googleAiGeminiService.generateChatResponse(
+            apiKey = apiKey,
             history = recentHistory,
             userMessage = userInput,
             systemInstructionText = systemPrompt,
             modelName = modelName
         )
 
-        if (rawResponse.startsWith("Error:") || rawResponse.startsWith("Firebase Gemini Error:")) {
+        if (rawResponse.startsWith("Error:") || rawResponse.startsWith("Gemini API Error:")) {
             return LlmResponse(
                 spokenText = rawResponse,
                 isError = true
@@ -134,9 +140,9 @@ class LlmClient(
         }
 
         val msg = if (userInput.any { it in '\u0980'..'\u09FF' }) {
-            "অনলাইন উত্তরের জন্য সেটিংসে $keyName যোগ করুন, অথবা গুগল জেমিনাই (Firebase AI Logic) নির্বাচন করুন যা কোনো কী ছাড়াই কাজ করে।"
+            "অনলাইন উত্তরের জন্য সেটিংসে আপনার $keyName যোগ করুন।"
         } else {
-            "Please configure your $keyName in Settings, or switch to Google Gemini which works automatically with Firebase AI Logic."
+            "Please configure your $keyName in Settings."
         }
         return LlmResponse(spokenText = msg, isError = true)
     }
