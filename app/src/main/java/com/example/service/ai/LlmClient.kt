@@ -37,7 +37,7 @@ class LlmClient(
         memories: List<Memory>,
         provider: String,
         apiKey: String = "",
-        geminiModel: String = "gemini-2.5-flash"
+        geminiModel: String = GoogleAiGeminiService.DEFAULT_MODEL
     ): LlmResponse = withContext(Dispatchers.IO) {
         val systemPrompt = buildSystemPrompt(memories)
 
@@ -80,7 +80,7 @@ class LlmClient(
                     systemPrompt = systemPrompt,
                     history = history,
                     userInput = userInput,
-                    modelName = geminiModel.ifBlank { "gemini-2.5-flash" }
+                    modelName = geminiModel.ifBlank { GoogleAiGeminiService.DEFAULT_MODEL }
                 )
             }
         }

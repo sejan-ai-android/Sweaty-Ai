@@ -201,9 +201,10 @@ fun SettingsScreen(viewModel: SweatyViewModel) {
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         listOf(
-                            "gemini-2.5-flash" to "⚡ Gemini 2.5 Flash",
-                            "gemini-3.5-flash-lite" to "🚀 Gemini 3.5 Flash-Lite",
-                            "gemini-3.8-flash" to "🌟 Gemini 3.8 Flash"
+                            "gemini-2.5-flash" to "⚡ Gemini 2.5 Flash (Default)",
+                            "gemini-3.5-flash" to "🚀 Gemini 3.5 Flash",
+                            "gemini-3.1-flash-lite-preview" to "💨 Gemini 3.1 Flash-Lite",
+                            "gemini-3.1-pro-preview" to "🧠 Gemini 3.1 Pro"
                         ).forEach { (mKey, mLabel) ->
                             val isSel = selectedGeminiModel == mKey
                             FilterChip(

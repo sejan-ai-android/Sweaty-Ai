@@ -8,7 +8,7 @@ class LlmRouter(
         apiKey: String,
         provider: String,
         message: String,
-        modelName: String = "gemini-2.5-flash"
+        modelName: String = GoogleAiGeminiService.DEFAULT_MODEL
     ): String {
         return when (provider.lowercase()) {
             "gemini" -> gemini.generateResponse(apiKey = apiKey, prompt = message, modelName = modelName)

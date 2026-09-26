@@ -50,7 +50,7 @@ Sweaty AI operates as an autonomous on-device co-pilot using a dedicated Android
   - **Autonomous Action Confirmation**: Safeguard dialog prompt for high-risk actions before execution.
 
 ### 🌐 5. Multi-LLM Provider Support
-- **Google Gemini**: Default high-speed intelligence using Gemini 2.5 Flash / Gemini Pro.
+- **Google Gemini**: Default high-speed intelligence using Gemini 2.5 Flash / Gemini 3.5 Flash / Gemini 3.1 Pro.
 - **OpenAI**: Optional support for GPT-4o / GPT-4o-mini.
 - **xAI Grok**: Optional integration with Grok-2.
 - User-provided API keys are encrypted locally and never transmitted to any third-party telemetry servers.
